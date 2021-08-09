@@ -1,0 +1,11 @@
+﻿@using Microsoft.AspNetCore.Http;
+@{
+    ViewData["Title"] = "Telepati";
+    string fullname = Context.Session.GetString("fullname");
+}
+<header>
+    <a href="https://www.telepatiyazilim.com/"><img src="/Login_v10/telepati-logo.svg"   style="background-color:white"  alt="Örnek Resim" /></a>
+</header>
+<div class="text-center">
+    <h1 style="color:white" class="display-4">Welcome @fullname</h1>
+</div>
