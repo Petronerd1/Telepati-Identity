@@ -1,13 +1,17 @@
 ﻿using Login.Filters;
 using Login.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Mail;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Login.Controllers
@@ -20,6 +24,7 @@ namespace Login.Controllers
         {
             _context = context;
         }
+        [HttpGet]
         public IActionResult Index()
         {
             if (HttpContext.Session.GetInt32("id").HasValue)
@@ -83,16 +88,27 @@ namespace Login.Controllers
             }
             return RedirectToAction("Index");
         }
-        public IActionResult Login(string Name, string Surname, string Email, string Password, string IdentityNumber)
+        public async Task<IActionResult> Login(User p)
         {
-            var user = _context.Users.FirstOrDefault(w => w.Name.Equals(Name) && w.Surname.Equals(Surname) && w.Email.Equals(Email) && w.Password.Equals(Password) && w.IdentityNumber.Equals(IdentityNumber));
+            var user = _context.Users.FirstOrDefault(x => x.Name == p.Name && x.Surname == p.Surname && x.Email == p.Email && x.Password == p.Password && x.IdentityNumber == p.IdentityNumber);
             if (user != null)
             {
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name,p.Name),
+                    new Claim(ClaimTypes.Surname,p.Surname),
+                    new Claim(ClaimTypes.Email,p.Email),
+
+
+                };
+                var useridentity = new ClaimsIdentity(claims,"Login");
+                ClaimsPrincipal principal = new ClaimsPrincipal(useridentity);
+                await HttpContext.SignInAsync(principal);
                 HttpContext.Session.SetInt32("id", user.ID);
                 HttpContext.Session.SetString("fullname", user.Name + "" + user.Surname);
-                return Redirect("/Home/Index/");
+                return RedirectToAction("Index","Home");
             }
-            return RedirectToAction("Index");
+            return View(); ;        
         }
         public IActionResult SignUp()
         {
@@ -110,11 +126,11 @@ namespace Login.Controllers
 
             return RedirectToAction("Index");
         }
-        public IActionResult LogOut()
+        public async Task<IActionResult> LogOut()
         {
-
-            HttpContext.Session.Clear();
-            return RedirectToAction("Index");
+            
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("Login","Account");
         }
        
         
